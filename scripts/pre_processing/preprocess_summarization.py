@@ -1,29 +1,50 @@
 import os
 import re
 import json
+import concurrent.futures
 
+# Define dataset paths
 input_folder = "datasets/summarization/"
-output_file = "datasets/preprocessed/summarization.json"
+output_folder = "datasets/preprocessed/summarization/"
+os.makedirs(output_folder, exist_ok=True)  # Ensure the summarization directory exists
 
-os.makedirs("datasets/preprocessed", exist_ok=True)
-
+# Function to clean text
 def clean_text(text):
     text = re.sub(r"\s+", " ", text)  # Remove extra spaces
     text = re.sub(r"\[.*?\]", "", text)  # Remove references like [1], [2]
-    text = text.strip()
-    return text
+    return text.strip()
 
-data = []
+# Function to process a JSON file
+def process_json(file):
+    file_path = os.path.join(input_folder, file)
+    output_path = os.path.join(output_folder, file)
+    
+    try:
+        # Load JSON data
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Preprocess text fields
+        for item in data:
+            if "text" in item:
+                item["text"] = clean_text(item["text"])
+            if "summary" in item:
+                item["summary"] = clean_text(item["summary"])
 
-for file in os.listdir(input_folder):
-    if file.endswith(".txt"):
-        with open(os.path.join(input_folder, file), "r", encoding="utf-8") as f:
-            summary = f.read()
+        # Save processed JSON
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
 
-        clean_summary = clean_text(summary)
-        data.append({"text": clean_summary, "summary": summary})
+        print(f"✅ Processed: {file} → {output_path}")
+    
+    except Exception as e:
+        print(f"❌ Error processing {file}: {e}")
 
-with open(output_file, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=4)
+# List of JSON files to process
+json_files = ["train.json", "validation.json", "test.json"]
 
-print(f"✅ Summarization dataset saved to {output_file}")
+# Use multi-threading to process all JSON files
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    executor.map(process_json, json_files)
+
+print("\n✅ Preprocessing complete! Files saved in:", output_folder)
