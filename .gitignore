@@ -1,2 +1,4 @@
-/datasets
-/documentation
+datasets/
+
+documentation/
+.env

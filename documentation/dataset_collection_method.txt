@@ -7,4 +7,7 @@ rawtexts from wikipedia
 factqa 
 
 
+data cleaneing
+vector embedding
+
 
